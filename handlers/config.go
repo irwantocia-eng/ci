@@ -8,6 +8,7 @@ import (
 	"github.com/koban/ci/models"
 )
 
+// ConfigListHandler handles GET and POST requests for /api/configs.
 func ConfigListHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -19,6 +20,7 @@ func ConfigListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ConfigHandler handles GET, PUT, DELETE requests for /api/configs/{id}.
 func ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := extractID(r.URL.Path, "/api/configs/")
 	if err != nil {

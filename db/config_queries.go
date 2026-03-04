@@ -8,6 +8,7 @@ import (
 	"github.com/koban/ci/models"
 )
 
+// CreateConfig creates a new config in the database.
 func CreateConfig(db *sql.DB, input models.CreateConfigInput) (*models.Config, error) {
 	now := time.Now()
 
@@ -33,6 +34,7 @@ func CreateConfig(db *sql.DB, input models.CreateConfigInput) (*models.Config, e
 	}, nil
 }
 
+// GetConfigByID retrieves a config by its ID.
 func GetConfigByID(db *sql.DB, id int64) (*models.Config, error) {
 	config := &models.Config{}
 
@@ -51,6 +53,7 @@ func GetConfigByID(db *sql.DB, id int64) (*models.Config, error) {
 	return config, nil
 }
 
+// GetConfigByKey retrieves a config by its key.
 func GetConfigByKey(db *sql.DB, key string) (*models.Config, error) {
 	config := &models.Config{}
 
@@ -69,6 +72,7 @@ func GetConfigByKey(db *sql.DB, key string) (*models.Config, error) {
 	return config, nil
 }
 
+// GetAllConfigs retrieves all configs from the database.
 func GetAllConfigs(db *sql.DB) ([]*models.Config, error) {
 	rows, err := db.Query(
 		"SELECT id, key, value, created_at, updated_at FROM configs ORDER BY id",
@@ -92,6 +96,7 @@ func GetAllConfigs(db *sql.DB) ([]*models.Config, error) {
 	return configs, nil
 }
 
+// UpdateConfig updates an existing config in the database.
 func UpdateConfig(db *sql.DB, id int64, input models.UpdateConfigInput) (*models.Config, error) {
 	config, err := GetConfigByID(db, id)
 	if err != nil {
@@ -116,6 +121,7 @@ func UpdateConfig(db *sql.DB, id int64, input models.UpdateConfigInput) (*models
 	return config, nil
 }
 
+// DeleteConfig deletes a config from the database.
 func DeleteConfig(db *sql.DB, id int64) error {
 	result, err := db.Exec("DELETE FROM configs WHERE id = ?", id)
 	if err != nil {
