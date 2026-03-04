@@ -1,5 +1,5 @@
 // Package main is the entry point for the Koban REST API server.
-// Testing SonarCloud CI trigger
+// Testing SonarCloud CI trigger - v4
 package main
 
 import (
