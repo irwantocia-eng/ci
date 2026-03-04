@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	// Testing unchecked error for pre-commit hook test
-	_, _ = fmt.Fprintln(os.Stdout, "Server starting")
+	// Testing unused variable for pre-commit hook test
+	_ = "this will be caught by linter"
 
 	port := os.Getenv("PORT")
 	if port == "" {
