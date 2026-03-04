@@ -22,7 +22,7 @@ jobs:
           go-version: '1.26'
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa
         with:
           version: v2.10.1
           args: --timeout=5m --output.checkstyle.path=golangci-lint-report.xml
@@ -32,7 +32,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@master
+        uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

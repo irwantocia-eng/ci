@@ -53,9 +53,15 @@ func main() {
 	mux.HandleFunc("PUT /api/products/", handlers.ProductHandler)
 	mux.HandleFunc("DELETE /api/products/", handlers.ProductHandler)
 
+	mux.HandleFunc("GET /api/configs", handlers.ConfigListHandler)
+	mux.HandleFunc("POST /api/configs", handlers.ConfigListHandler)
+	mux.HandleFunc("GET /api/configs/", handlers.ConfigHandler)
+	mux.HandleFunc("PUT /api/configs/", handlers.ConfigHandler)
+	mux.HandleFunc("DELETE /api/configs/", handlers.ConfigHandler)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if _, err := fmt.Fprintf(w, `{"message": "Welcome to Koban API", "endpoints": {"users": "/api/users", "products": "/api/products"}}`); err != nil {
+		if _, err := fmt.Fprintf(w, `{"message": "Welcome to Koban API", "endpoints": {"users": "/api/users", "products": "/api/products", "configs": "/api/configs"}}`); err != nil {
 			log.Printf("Failed to write response: %v", err)
 		}
 	})
