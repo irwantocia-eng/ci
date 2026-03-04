@@ -42,11 +42,10 @@ jobs:
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.go.coverage.reportPaths=coverage.out
 
-      - name: Wait for Quality Gate
-        uses: sonarsource/quality-gates-action@master
-        if: always()
-        timeout-minutes: 5
+      - name: SonarQube Quality Gate check
+        uses: sonarsource/sonarqube-quality-gate-action@master
         with:
-          sonarToken: ${{ secrets.SONAR_TOKEN }}
-          organization: ${{ vars.SONAR_ORGANIZATION }}
-          projectKey: ${{ vars.SONAR_PROJECT_KEY }}
+          pollingTimeoutSec: 300
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
