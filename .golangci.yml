@@ -14,16 +14,6 @@ linters:
     - unused
     - prealloc
     - bodyclose
-  settings:
-    revive:
-      rules:
-        exported: warning
-        package-comments: warning
-    gosec:
-      excludes:
-        - G104
-    gocyclo:
-      min-complexity: 15
 
 issues:
   max-issues-per-linter: 0
