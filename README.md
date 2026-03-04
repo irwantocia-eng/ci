@@ -16,7 +16,7 @@ A production-ready REST API built with Go's standard library and SQLite.
 
 ### Prerequisites
 
-- Go 1.24 or higher
+- **Go 1.26 or higher** - Download from [go.dev](https://go.dev/)
 - Make (optional, for Makefile targets)
 
 ### Installation
