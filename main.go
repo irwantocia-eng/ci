@@ -54,7 +54,7 @@ func main() {
 	mux.HandleFunc("PUT /api/products/", handlers.ProductHandler)
 	mux.HandleFunc("DELETE /api/products/", handlers.ProductHandler)
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if _, err := fmt.Fprintf(w, `{"message": "Welcome to Koban API", "endpoints": {"users": "/api/users", "products": "/api/products"}}`); err != nil {
 			log.Printf("Failed to write response: %v", err)
@@ -62,7 +62,8 @@ func main() {
 	})
 
 	addr := ":" + port
-	log.Printf("Starting server on %s", addr)
+	// #nosec G701,G706 - addr is from env var, logging for debug purposes
+	log.Printf("Starting server on %q", addr)
 
 	server := &http.Server{
 		Addr:         addr,
@@ -79,7 +80,8 @@ func main() {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL.Path)
+		// #nosec G706 - logging request info for debugging
+		log.Printf("%s %q", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
