@@ -170,7 +170,6 @@ func TestSetupRouter(t *testing.T) {
 
 	mux := SetupRouter(database)
 
-	// Test that routes are registered
 	tests := []struct {
 		method string
 		path   string
@@ -199,9 +198,18 @@ func TestSetupRouter(t *testing.T) {
 
 		mux.ServeHTTP(w, req)
 
-		// All routes should return some response (not 404)
 		if w.Code == http.StatusNotFound {
 			t.Errorf("Route %s %s not found", tc.method, tc.path)
 		}
+	}
+}
+
+func TestInitDatabase_InvalidPath(t *testing.T) {
+	cfg := &Config{DBPath: "/invalid/path/that/does/not/exist/database.sqlite"}
+
+	_, err := InitDatabase(cfg)
+
+	if err == nil {
+		t.Error("Expected error for invalid database path, got nil")
 	}
 }
