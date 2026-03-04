@@ -14,6 +14,9 @@ import (
 )
 
 func main() {
+	// Testing unchecked error for pre-commit hook test
+	_, _ = fmt.Fprintln(os.Stdout, "Server starting")
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8089"
