@@ -41,3 +41,12 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.go.coverage.reportPaths=coverage.out
+
+      - name: Wait for Quality Gate
+        uses: sonarsource/quality-gates-action@master
+        if: always()
+        timeout-minutes: 5
+        with:
+          sonarToken: ${{ secrets.SONAR_TOKEN }}
+          organization: ${{ vars.SONAR_ORGANIZATION }}
+          projectKey: ${{ vars.SONAR_PROJECT_KEY }}
