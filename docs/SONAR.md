@@ -39,7 +39,7 @@ SonarCloud is a **cloud-based code quality and security analysis service** (SaaS
 | **Cloud-hosted** | No infrastructure to maintain (unlike self-hosted SonarQube) |
 | **GitHub Integration** | Automatic PR comments, status checks |
 | **Go Support** | Native analysis for Go code patterns |
-| **golangci-lint Integration** | Import existing lint rules (11 linters) |
+| **golangci-lint Integration** | Import existing lint rules (12 linters) |
 | **Free Tier** | Unlimited analyses for public repos |
 | **Fast Setup** | 5 minutes to first analysis |
 | **Quality Gates** | Automated quality enforcement |
@@ -211,7 +211,7 @@ sonar.scm.provider=git
 
 | Metric | Threshold | Status |
 |--------|-----------|--------|
-| **Coverage** | > 60% | ✅ Pass |
+| **Coverage** | > 80% | ✅ Pass |
 | **Bugs** | 0 | ✅ Pass |
 | **Vulnerabilities** | 0 | ✅ Pass |
 | **Code Smells** | < 50 | ✅ Pass |
@@ -222,7 +222,7 @@ sonar.scm.provider=git
 
 ```mermaid
 graph TD
-    A[Analysis Complete] --> B{Coverage > 60%?}
+    A[Analysis Complete] --> B{Coverage > 80%?}
     B -->|No| C[❌ FAILED]
     B -->|Yes| D{Bugs = 0?}
     D -->|No| C
@@ -427,7 +427,7 @@ Priority order:
 
 Start lenient, tighten over time:
 - **Week 1**: Coverage > 40%, Bugs = 0
-- **Month 1**: Coverage > 60%, No critical issues
+- **Month 1**: Coverage > 80%, No critical issues
 - **Month 3**: Coverage > 80%, A maintainability
 
 ### 7. Review PR Decoration

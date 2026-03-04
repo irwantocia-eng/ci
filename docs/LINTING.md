@@ -27,7 +27,7 @@ golangci-lint is a fast Go linters aggregator that runs multiple linters in para
 ### Why We Use It
 
 - **Speed**: 5x faster than running linters individually (parallel execution + caching)
-- **Comprehensive**: 11 linters covering security, reliability, style, and performance
+- **Comprehensive**: 12 linters covering security, reliability, style, and performance
 - **Configurable**: YAML configuration with fine-grained control
 - **CI/CD Ready**: Native GitHub Actions integration
 - **IDE Support**: Real-time feedback in VS Code, GoLand, and other editors
@@ -196,6 +196,7 @@ run:
 
 | Linter | Purpose | Why We Use It | Example Issue |
 |--------|---------|---------------|---------------|
+| **unconvert** | Unnecessary type conversions | Removes redundant type casts | `int(x)` where x is already int |
 | **unparam** | Unused parameters | Clean function signatures | `func fn(ctx context.Context, x int)` where x is never used |
 | **unused** | Dead code detection | Removes unused variables/types | Unused struct fields, functions |
 | **prealloc** | Slice preallocation | Reduces memory allocations | `slice := []T{}` vs `make([]T, 0, cap)` |
@@ -767,7 +768,7 @@ golangci-lint cache clean
 
 - Cyclomatic complexity: 15
 - Timeout: 5 minutes
-- Enabled linters: 11
+- Enabled linters: 12
 
 ---
 

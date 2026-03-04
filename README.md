@@ -7,7 +7,7 @@ A production-ready REST API built with Go's standard library and SQLite.
 - RESTful endpoints for users and products
 - SQLite database with migrations
 - HTTP middleware (logging, CORS)
-- Comprehensive linting with golangci-lint (11 linters)
+- Comprehensive linting with golangci-lint (12 linters)
 - Pre-commit hook for automatic code quality enforcement
 - SonarCloud integration for continuous code analysis
 - Unit tests with coverage reporting
@@ -71,26 +71,41 @@ SQLite database file `koban.db` is created automatically in the project root.
 ```
 .
 ├── main.go                 # Application entry point
+├── main_test.go            # Main package tests
 ├── go.mod                  # Go module definition
 ├── Makefile                # Build commands
 ├── .golangci.yml           # Linter configuration
+├── sonar-project.properties # SonarCloud configuration
+├── .github/
+│   └── hooks/
+│       └── pre-commit     # Pre-commit linting hook
 ├── docs/
-│   └── LINTING.md          # Linting guide
+│   ├── LINTING.md         # Linting guide
+│   └── SONAR.md           # SonarCloud integration guide
 ├── db/
-│   ├── sqlite.go           # Database connection
-│   ├── user_queries.go     # User operations
-│   └── product_queries.go  # Product operations
+│   ├── sqlite.go          # Database connection
+│   ├── user_queries.go    # User operations
+│   ├── user_queries_test.go
+│   ├── product_queries.go  # Product operations
+│   ├── product_queries_test.go
+│   ├── config_queries.go  # Config operations
+│   └── config_queries_test.go
 ├── handlers/
-│   ├── users.go            # User HTTP handlers
-│   └── products.go         # Product HTTP handlers
+│   ├── users.go           # User HTTP handlers
+│   ├── users_test.go
+│   ├── products.go        # Product HTTP handlers
+│   ├── products_test.go
+│   ├── config.go          # Config HTTP handlers
+│   └── config_test.go
 └── models/
-    ├── user.go             # User model
-    └── product.go          # Product model
+    ├── user.go            # User model
+    ├── product.go         # Product model
+    └── config.go          # Config model
 ```
 
 ## Code Quality
 
-This project uses [golangci-lint](https://golangci-lint.run/) for automated code review with **11 enabled linters** covering security, reliability, and style.
+This project uses [golangci-lint](https://golangci-lint.run/) for automated code review with **12 enabled linters** covering security, reliability, and style.
 
 ### Pre-commit Hook
 
@@ -117,7 +132,7 @@ make sonar-scan
 ```
 
 **Quality Gates:**
-- Coverage > 60%
+- Coverage > 80%
 - 0 Bugs
 - 0 Vulnerabilities
 - Code Smells < 50
@@ -130,7 +145,7 @@ See [docs/SONAR.md](docs/SONAR.md) for complete setup guide including:
 - Quality gates customization
 
 See [docs/LINTING.md](docs/LINTING.md) for the complete linting guide including:
-- All 11 linters explained
+- All 12 linters explained
 - Common issues and fixes
 - IDE integration
 - Troubleshooting
