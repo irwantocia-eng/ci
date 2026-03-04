@@ -4,16 +4,16 @@ set -e
 # SonarScanner installation and execution script
 # This script downloads SonarScanner if not present and runs the analysis
 
-SONAR_SCANNER_VERSION=6.2.1.4610
-SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-macosx
-SONAR_SCANNER_BIN=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-macosx/bin/sonar-scanner
+SONAR_SCANNER_VERSION=6.2.1.4610-linux-x64
+SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION
+SONAR_SCANNER_BIN=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner
 
 # Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 if [ "$OS" = "linux" ]; then
-    SONAR_SCANNER_BIN=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner
+    SONAR_SCANNER_BIN=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner
     ZIP_FILE="sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip"
     DOWNLOAD_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$ZIP_FILE"
 elif [ "$OS" = "darwin" ]; then
@@ -67,9 +67,8 @@ $SONAR_SCANNER_BIN \
     -Dsonar.projectKey=$PROJECT_KEY \
     -Dsonar.sources=. \
     -Dsonar.host.url=https://sonarcloud.io \
-    -Dsonar.login=$SONAR_TOKEN \
-    -Dsonar.go.coverage.reportPaths=coverage.out \
-    -Dsonar.externalIssuesReportPaths=golangci-lint.sarif
+    -Dsonar.token=$SONAR_TOKEN \
+    -Dsonar.go.coverage.reportPaths=coverage.out
 
 echo ""
 echo "✅ Analysis complete!"
