@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,6 +11,123 @@ import (
 	"github.com/koban/ci/db"
 	"github.com/koban/ci/models"
 )
+
+func TestConfigHandler_Delete_DBError(t *testing.T) {
+	database := setupTestDB(t)
+
+	createdConfig, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "test_key",
+		Value: "test_value",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/configs/%d", createdConfig.ID), nil)
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestGetAllConfigs_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/configs", nil)
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestGetConfigByID_DBError(t *testing.T) {
+	database := setupTestDB(t)
+
+	createdConfig, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "test_key",
+		Value: "test_value",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/configs/%d", createdConfig.ID), nil)
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateConfig_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	configInput := models.CreateConfigInput{
+		Key:   "test_key",
+		Value: "test_value",
+	}
+	body, _ := json.Marshal(configInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/configs", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateConfig_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	updateInput := models.UpdateConfigInput{
+		Key:   "test_key",
+		Value: "test_value",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/configs/1", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
 
 func TestConfigListHandler_GET(t *testing.T) {
 	database := setupTestDB(t)
@@ -246,5 +364,270 @@ func TestConfigListHandler_MethodNotAllowed(t *testing.T) {
 
 	if res.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status 405, got %d", res.StatusCode)
+	}
+}
+
+func TestGetAllConfigs_Empty(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/configs", nil)
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", res.StatusCode)
+	}
+
+	var configs []models.Config
+	if err := json.NewDecoder(res.Body).Decode(&configs); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if len(configs) != 0 {
+		t.Errorf("Expected 0 configs, got %d", len(configs))
+	}
+}
+
+func TestCreateConfig_InvalidBody(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/configs", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateConfig_InvalidBody(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodPut, "/api/configs/1", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestConfigHandler_MethodNotAllowed(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/configs/1", nil)
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("Expected status 405, got %d", res.StatusCode)
+	}
+}
+
+func TestConfigHandler_InvalidID(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/configs/abc", nil)
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateConfig_DuplicateKey(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	_, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "duplicate_key",
+		Value: "first_value",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create first config: %v", err)
+	}
+
+	configInput := models.CreateConfigInput{
+		Key:   "duplicate_key",
+		Value: "second_value",
+	}
+	body, _ := json.Marshal(configInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/configs", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusConflict {
+		t.Errorf("Expected status 409, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateConfig_DuplicateKey(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	_, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "existing_key",
+		Value: "value1",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	createdConfig, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "update_key",
+		Value: "value2",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create second config: %v", err)
+	}
+
+	updateInput := models.UpdateConfigInput{
+		Key:   "existing_key",
+		Value: "updated_value",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/configs/%d", createdConfig.ID), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusConflict {
+		t.Errorf("Expected status 409, got %d", res.StatusCode)
+	}
+}
+
+func TestDeleteConfig_NotFound(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/configs/999", nil)
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusNoContent {
+		t.Errorf("Expected status 204, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateConfig_EmptyKey(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	configInput := models.CreateConfigInput{
+		Key:   "",
+		Value: "some value",
+	}
+	body, _ := json.Marshal(configInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/configs", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("Expected status 201, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateConfig_EmptyValue(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	configInput := models.CreateConfigInput{
+		Key:   "test_key",
+		Value: "",
+	}
+	body, _ := json.Marshal(configInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/configs", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("Expected status 201, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateConfig_EmptyKey(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	createdConfig, err := db.CreateConfig(database.DB, models.CreateConfigInput{
+		Key:   "original_key",
+		Value: "original_value",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	updateInput := models.UpdateConfigInput{
+		Key:   "",
+		Value: "updated_value",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/configs/%d", createdConfig.ID), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ConfigHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", res.StatusCode)
 	}
 }

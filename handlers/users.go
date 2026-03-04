@@ -85,6 +85,10 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := db.CreateUser(dbInstance.DB, input)
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") || strings.Contains(err.Error(), "duplicate key") {
+			http.Error(w, "User with this email already exists", http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -106,6 +110,10 @@ func updateUser(w http.ResponseWriter, r *http.Request, id int64) {
 
 	user, err := db.UpdateUser(dbInstance.DB, id, input)
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") || strings.Contains(err.Error(), "duplicate key") {
+			http.Error(w, "User with this email already exists", http.StatusConflict)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

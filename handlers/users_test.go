@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -241,14 +242,14 @@ func TestUserHandler_DELETE(t *testing.T) {
 	}
 }
 
-func TestUserListHandler_MethodNotAllowed(t *testing.T) {
+func TestUserHandler_MethodNotAllowed(t *testing.T) {
 	database := setupTestDB(t)
 	defer func() { _ = database.Close() }()
 
-	req := httptest.NewRequest(http.MethodPatch, "/api/users", nil)
+	req := httptest.NewRequest(http.MethodPatch, "/api/users/1", nil)
 	w := httptest.NewRecorder()
 
-	UserListHandler(w, req)
+	UserHandler(w, req)
 
 	res := w.Result()
 	defer func() {
@@ -257,5 +258,330 @@ func TestUserListHandler_MethodNotAllowed(t *testing.T) {
 
 	if res.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status 405, got %d", res.StatusCode)
+	}
+}
+
+func TestGetAllUsers_Empty(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", res.StatusCode)
+	}
+
+	var users []models.User
+	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if len(users) != 0 {
+		t.Errorf("Expected 0 users, got %d", len(users))
+	}
+}
+
+func TestCreateUser_InvalidBody(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateUser_InvalidBody(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodPut, "/api/users/1", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestUserHandler_InvalidID(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users/abc", nil)
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateUser_DuplicateEmail(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	_, err := db.CreateUser(database.DB, models.CreateUserInput{
+		Name:  "First User",
+		Email: "duplicate@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create first user: %v", err)
+	}
+
+	userInput := models.CreateUserInput{
+		Name:  "Second User",
+		Email: "duplicate@example.com",
+	}
+	body, _ := json.Marshal(userInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusConflict {
+		t.Errorf("Expected status 409, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateUser_DuplicateEmail(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	_, err := db.CreateUser(database.DB, models.CreateUserInput{
+		Name:  "First User",
+		Email: "existing@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create first user: %v", err)
+	}
+
+	createdUser, err := db.CreateUser(database.DB, models.CreateUserInput{
+		Name:  "Second User",
+		Email: "second@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create second user: %v", err)
+	}
+
+	updateInput := models.UpdateUserInput{
+		Name:  "Updated Name",
+		Email: "existing@example.com",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/users/"+fmt.Sprintf("%d", createdUser.ID), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusConflict {
+		t.Errorf("Expected status 409, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateUser_NotFound(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	updateInput := models.UpdateUserInput{
+		Name:  "Test",
+		Email: "test@example.com",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/users/999", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status 404, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateUser_EmptyName(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	userInput := models.CreateUserInput{
+		Name:  "",
+		Email: "valid@example.com",
+	}
+	body, _ := json.Marshal(userInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("Expected status 201, got %d", res.StatusCode)
+	}
+}
+
+func TestDeleteUser_NotFound(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/users/999", nil)
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusNoContent {
+		t.Errorf("Expected status 204, got %d", res.StatusCode)
+	}
+}
+
+func TestGetUserByID_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	defer func() { _ = database.Close() }()
+
+	createdUser, err := db.CreateUser(database.DB, models.CreateUserInput{
+		Name:  "Test User",
+		Email: "test@example.com",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/%d", createdUser.ID), nil)
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestGetAllUsers_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestCreateUser_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	userInput := models.CreateUserInput{
+		Name:  "Test User",
+		Email: "test@example.com",
+	}
+	body, _ := json.Marshal(userInput)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserListHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestUpdateUser_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	updateInput := models.UpdateUserInput{
+		Name:  "Test",
+		Email: "test@example.com",
+	}
+	body, _ := json.Marshal(updateInput)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/users/1", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
+	}
+}
+
+func TestDeleteUser_DBError(t *testing.T) {
+	database := setupTestDB(t)
+	_ = database.Close()
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/users/1", nil)
+	w := httptest.NewRecorder()
+
+	UserHandler(w, req)
+
+	res := w.Result()
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", res.StatusCode)
 	}
 }

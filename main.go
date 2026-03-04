@@ -12,7 +12,14 @@ import (
 	"github.com/koban/ci/handlers"
 )
 
-func main() {
+// Config holds server configuration
+type Config struct {
+	Port   string
+	DBPath string
+}
+
+// LoadConfig reads configuration from environment variables
+func LoadConfig() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8089"
@@ -23,20 +30,29 @@ func main() {
 		dbPath = "koban.db"
 	}
 
-	database, err := db.NewSQLite(dbPath)
-	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+	return &Config{
+		Port:   port,
+		DBPath: dbPath,
 	}
-	defer func() {
-		if err := database.Close(); err != nil {
-			log.Printf("Failed to close database: %v", err)
-		}
-	}()
+}
+
+// InitDatabase initializes the database and runs migrations
+func InitDatabase(cfg *Config) (*db.Database, error) {
+	database, err := db.NewSQLite(cfg.DBPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
 
 	if err := database.Migrate(); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		_ = database.Close()
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
+	return database, nil
+}
+
+// SetupRouter creates and configures the HTTP router
+func SetupRouter(database *db.Database) *http.ServeMux {
 	handlers.SetDBInstance(database)
 
 	mux := http.NewServeMux()
@@ -66,19 +82,45 @@ func main() {
 		}
 	})
 
-	addr := ":" + port
-	// #nosec G701,G706 - addr is from env var, logging for debug purposes
-	log.Printf("Starting server on %q", addr)
+	return mux
+}
 
-	server := &http.Server{
+// NewServer creates a new HTTP server with the given configuration
+func NewServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
 		Addr:         addr,
-		Handler:      corsMiddleware(loggingMiddleware(mux)),
+		Handler:      corsMiddleware(loggingMiddleware(handler)),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+}
 
-	if err := server.ListenAndServe(); err != nil {
+// RunServer starts the HTTP server (typically not called in tests)
+func RunServer(srv *http.Server) error {
+	log.Printf("Starting server on %q", srv.Addr)
+	return srv.ListenAndServe()
+}
+
+func main() {
+	cfg := LoadConfig()
+
+	database, err := InitDatabase(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer func() {
+		if err := database.Close(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		}
+	}()
+
+	mux := SetupRouter(database)
+
+	addr := ":" + cfg.Port
+	server := NewServer(addr, mux)
+
+	if err := RunServer(server); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
