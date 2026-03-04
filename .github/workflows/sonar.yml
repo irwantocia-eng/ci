@@ -41,4 +41,3 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.go.coverage.reportPaths=coverage.out
-            -Dsonar.externalIssuesReportPaths=golangci-lint.sarif
