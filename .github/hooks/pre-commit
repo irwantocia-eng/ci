@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+echo "Running golangci-lint..."
+make lint
+
+if [ $? -eq 0 ]; then
+    echo "✅ Linting passed!"
+    exit 0
+else
+    echo ""
+    echo "❌ Linting failed. Commit aborted."
+    echo ""
+    echo "To see all issues, run:"
+    echo "  make lint"
+    echo ""
+    echo "To skip this hook (not recommended), run:"
+    echo "  git commit --no-verify"
+    echo ""
+    exit 1
+fi

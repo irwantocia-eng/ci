@@ -1,0 +1,37 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+linters:
+  disable-all: true
+  enable:
+    - gosec
+    - errcheck
+    - staticcheck
+    - govet
+    - revive
+    - gocyclo
+    - misspell
+    - unparam
+    - unused
+    - prealloc
+    - bodyclose
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: package-comments
+        severity: warning
+  gosec:
+    excludes:
+      - G104
+  gocyclo:
+    min-complexity: 15
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
