@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/koban/ci/db"
 )
 
 func TestLoadConfig_Defaults(t *testing.T) {
@@ -211,5 +213,74 @@ func TestInitDatabase_InvalidPath(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected error for invalid database path, got nil")
+	}
+}
+
+func TestInitDatabase_MigrationError(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := tmpDir + "/test.db"
+
+	_, err := db.NewSQLite(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to create temp database: %v", err)
+	}
+
+	// #nosec G302
+	_ = os.Chmod(tmpDir, 0555)
+
+	_, err = InitDatabase(&Config{DBPath: dbPath})
+
+	// #nosec G302
+	_ = os.Chmod(tmpDir, 0755)
+
+	if err == nil {
+		t.Error("Expected error for migration failure on read-only dir, got nil")
+	}
+}
+
+func TestInitializeApp_Success(t *testing.T) {
+	cfg := &Config{DBPath: ":memory:", Port: "8089"}
+
+	server, err := InitializeApp(cfg)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if server != nil && server.Addr != ":8089" {
+		t.Errorf("Expected addr :8089, got %s", server.Addr)
+	}
+
+	if server != nil {
+		_ = server.Close()
+	}
+}
+
+func TestInitializeApp_DBError(t *testing.T) {
+	cfg := &Config{DBPath: "/invalid/path/db.sqlite"}
+
+	_, err := InitializeApp(cfg)
+
+	if err == nil {
+		t.Error("Expected error for invalid DB path, got nil")
+	}
+}
+
+func TestCloseApp_NilServer(t *testing.T) {
+	err := CloseApp(nil)
+
+	if err != nil {
+		t.Errorf("Expected no error for nil server, got %v", err)
+	}
+}
+
+func TestCloseApp_ValidServer(t *testing.T) {
+	mux := http.NewServeMux()
+	server := NewServer(":0", mux)
+
+	err := CloseApp(server)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
 	}
 }

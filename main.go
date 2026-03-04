@@ -102,23 +102,42 @@ func RunServer(srv *http.Server) error {
 	return srv.ListenAndServe()
 }
 
-func main() {
-	cfg := LoadConfig()
-
+// InitializeApp loads configuration, initializes database, and sets up router.
+// Returns the configured server ready to start.
+func InitializeApp(cfg *Config) (*http.Server, error) {
 	database, err := InitDatabase(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
-	defer func() {
-		if err := database.Close(); err != nil {
-			log.Printf("Failed to close database: %v", err)
-		}
-	}()
 
 	mux := SetupRouter(database)
 
 	addr := ":" + cfg.Port
 	server := NewServer(addr, mux)
+
+	return server, nil
+}
+
+// CloseApp properly closes all resources
+func CloseApp(server *http.Server) error {
+	if server != nil {
+		return server.Close()
+	}
+	return nil
+}
+
+func main() {
+	cfg := LoadConfig()
+
+	server, err := InitializeApp(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize: %v", err)
+	}
+	defer func() {
+		if err := CloseApp(server); err != nil {
+			log.Printf("Failed to close server: %v", err)
+		}
+	}()
 
 	if err := RunServer(server); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
