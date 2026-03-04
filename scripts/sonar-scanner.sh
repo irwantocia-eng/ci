@@ -68,7 +68,8 @@ $SONAR_SCANNER_BIN \
     -Dsonar.sources=. \
     -Dsonar.host.url=https://sonarcloud.io \
     -Dsonar.token=$SONAR_TOKEN \
-    -Dsonar.go.coverage.reportPaths=coverage.out
+    -Dsonar.go.coverage.reportPaths=coverage.out \
+    -Dsonar.go.golangci-lint.reportPaths=golangci-lint-report.xml
 
 echo ""
 echo "✅ Analysis complete!"

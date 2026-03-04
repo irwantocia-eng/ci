@@ -1,5 +1,4 @@
 // Package main is the entry point for the Koban REST API server.
-// Testing SonarCloud CI trigger - v5
 package main
 
 import (
@@ -14,9 +13,6 @@ import (
 )
 
 func main() {
-	// Testing unused variable for pre-commit hook test
-	_ = "this will be caught by linter"
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8089"

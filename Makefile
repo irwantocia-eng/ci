@@ -24,8 +24,8 @@ coverage-html: coverage
 	@echo "Coverage report generated: coverage.html"
 
 sonar-scan: coverage
-	golangci-lint run --output.sarif.path=golangci-lint.sarif
+	golangci-lint run --output.checkstyle.path=golangci-lint-report.xml
 	bash scripts/sonar-scanner.sh
 
 clean:
-	rm -f server koban.db coverage.out coverage.html golangci-lint.sarif
+	rm -f server koban.db coverage.out coverage.html golangci-lint.sarif golangci-lint-report.xml
