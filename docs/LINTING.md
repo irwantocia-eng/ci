@@ -95,7 +95,7 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 ### Verify Installation
 
 ```bash
-# Check version (should be v1.64.8 or later)
+# Check version (should be v2.10.1 or later)
 golangci-lint version
 
 # Check binary location
@@ -108,7 +108,7 @@ If Makefile is not available:
 
 ```bash
 # Install latest version
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.10.1
 
 # Or install specific version
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -134,13 +134,10 @@ Configuration is in `.golangci.yml` at the project root.
 ### Configuration Breakdown
 
 ```yaml
-run:
-  timeout: 5m                          # Maximum time for linter to run
-  modules-download-mode: readonly      # Don't modify go.mod
-  allow-parallel-runners: true         # Run linters in parallel (faster)
+version: "2"
 
 linters:
-  disable-all: true                    # Start with clean slate
+  default: none
   enable:
     - gosec                            # Security scanner
     - errcheck                         # Unchecked errors
@@ -154,23 +151,14 @@ linters:
     - prealloc                         # Slice preallocation
     - bodyclose                        # HTTP response body closing
 
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        severity: warning              # Warn on missing doc comments
-      - name: package-comments
-        severity: warning
-  gosec:
-    excludes:
-      - G104                           # Less strict on error checking
-  gocyclo:
-    min-complexity: 15                 # Max complexity before warning
-
 issues:
   max-issues-per-linter: 0             # No limit on issues
   max-same-issues: 0                   # Show all duplicates
-  exclude-use-default: false           # Don't use default excludes
+
+run:
+  timeout: 5m                          # Maximum time for linter to run
+  modules-download-mode: readonly      # Don't modify go.mod
+  allow-parallel-runners: true         # Run linters in parallel (faster)
 ```
 
 ### Why These Settings?
@@ -178,10 +166,9 @@ issues:
 | Setting | Value | Reasoning |
 |---------|-------|-----------|
 | `timeout` | 5m | Prevents hangs on large codebases |
-| `parallel-runners` | true | 5x speed improvement |
-| `gocyclo threshold` | 15 | Functions stay readable and testable |
+| `allow-parallel-runners` | true | Speed improvement |
 | `max-issues` | 0 | Show all issues, no hiding |
-| `exclude-use-default` | false | Catch everything, review manually |
+| `version` | "2" | Use golangci-lint v2 format |
 
 ---
 
@@ -552,7 +539,7 @@ Unlike many projects, we do NOT run golangci-lint in CI because:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | `golangci-lint: command not found` | Not in PATH | Run `make lint-install` and add `$GOPATH/bin` to PATH |
-| `version mismatch (expected v1.64.8)` | Old installation | Re-run `make lint-install` |
+| `version mismatch (expected v2.10.1)` | Old installation | Re-run `make lint-install` |
 | Pre-commit hook fails but `make lint` passes | Hook PATH issue | Check hook uses full path: `export PATH=$PATH:$(go env GOPATH)/bin` |
 | Slow linter performance | No caching | Clear cache with `golangci-lint cache clean` |
 | False positive on specific line | Linter bug or edge case | Use `//nolint:lintname` directive |
@@ -773,8 +760,8 @@ golangci-lint cache clean
 ### Configuration
 
 **File:** `.golangci.yml`  
-**Version:** v1.64.8  
-**Go Version:** 1.24+
+**Version:** v2.10.1  
+**Go Version:** 1.26+
 
 ### Key Thresholds
 

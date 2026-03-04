@@ -74,7 +74,7 @@ graph LR
 **Key Points:**
 1. Pre-commit hook ensures code is linted before push
 2. CI workflow runs tests and coverage analysis
-3. golangci-lint SARIF report imported as SonarQube issues
+3. golangci-lint runs locally for code quality
 4. Quality Gate determines if PR can merge
 5. Dashboard shows long-term quality trends
 
@@ -180,9 +180,6 @@ sonar.test.inclusions=**/*_test.go
 # Coverage report
 sonar.go.coverage.reportPaths=coverage.out
 
-# golangci-lint SARIF report
-sonar.externalIssuesReportPaths=golangci-lint.sarif
-
 # Git integration
 sonar.scm.provider=git
 ```
@@ -265,8 +262,8 @@ export SONAR_TOKEN=your_token_here
 # Run tests with coverage
 go test ./handlers -coverprofile=coverage.out
 
-# Run golangci-lint (generate SARIF report)
-golangci-lint run --out-format=sarif:golangci-lint.sarif
+# Run golangci-lint (optional - for local quality checks)
+golangci-lint run --timeout=5m --output.sarif.path=golangci-lint.sarif
 
 # Run SonarScanner
 bash scripts/sonar-scanner.sh
@@ -277,10 +274,9 @@ bash scripts/sonar-scanner.sh
 On every push to `main` or PR:
 
 1. Tests run with coverage
-2. golangci-lint generates SARIF report
-3. SonarScanner uploads to SonarCloud
-4. Quality Gate determines pass/fail
-5. PR gets decorated with results
+2. SonarCloud analyzes the code
+3. Quality Gate determines pass/fail
+4. PR gets decorated with results
 
 ### Makefile Targets
 
@@ -355,7 +351,6 @@ Coverage: 60% ✅ (passes gate)
 | `Project not found` | Wrong project key | Check `sonar-project.properties` matches SonarCloud project |
 | `No coverage data` | Tests not run or wrong path | Ensure `go test -coverprofile=coverage.out` runs before SonarScanner |
 | `Quality Gate failed` | Metrics below threshold | Fix issues or adjust thresholds in SonarCloud settings |
-| `SARIF import failed` | Invalid format | Use `--out-format=sarif` with golangci-lint |
 | `Scanner download fails` | Network issue | Download manually from https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner-cli/ |
 
 ### Debug Mode
@@ -401,11 +396,11 @@ Always generate fresh coverage data:
 go test ./handlers -coverprofile=coverage.out
 ```
 
-### 2. Import golangci-lint Results
+### 2. Run golangci-lint Locally
 
-Convert existing lint rules to SonarQube issues:
+Run golangci-lint locally to catch issues before pushing:
 ```bash
-golangci-lint run --out-format=sarif:golangci-lint.sarif
+golangci-lint run --timeout=5m
 ```
 
 ### 3. Focus on New Code
