@@ -3,17 +3,21 @@ version: "2"
 linters:
   default: none
   enable:
-    - gosec
+    # Defaults
     - errcheck
-    - staticcheck
     - govet
+    - staticcheck
+    - unused
+    # Recommended additions
+    - bodyclose
+    - gosec
     - revive
+    - unconvert
+    - unparam
+    # Additional useful linters
     - gocyclo
     - misspell
-    - unparam
-    - unused
     - prealloc
-    - bodyclose
 
 issues:
   max-issues-per-linter: 0
