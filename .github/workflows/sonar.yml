@@ -1,4 +1,4 @@
-name: SonarCloud Analysis
+name: SonarQube Analysis
 
 on:
   push:
@@ -36,10 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.go.coverage.reportPaths=coverage.out
             -Dsonar.go.golangci-lint.reportPaths=golangci-lint-report.xml
